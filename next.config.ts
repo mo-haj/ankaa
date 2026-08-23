@@ -226,7 +226,18 @@ const nextConfig: NextConfig = {
 
     /* On the Pages target there is no optimiser, so the loader must be turned
        off or `next build` refuses to export. See the GITHUB_PAGES block. */
-    ...(GITHUB_PAGES ? { unoptimized: true } : {}),
+    /* ⛔ A CUSTOM LOADER, NOT `unoptimized: true`. Static export accepts
+       either, and `unoptimized` shipped every image broken: it makes the
+       default loader return `src` verbatim, and basePath is applied by the
+       optimiser URL that no longer exists — so the page asked for
+       `/images/hero.webp` while the file sat at `/ankaa/images/hero.webp`.
+       The loader restores the prefix. Full account in the loader file. */
+    ...(GITHUB_PAGES
+      ? {
+          loader: "custom" as const,
+          loaderFile: "./scripts/pages-preview/image-loader.ts",
+        }
+      : {}),
 
     /* -------------------------------------------------------------------------
      * `deviceSizes` and `imageSizes` are LEFT AT THE DEFAULTS ON PURPOSE, and
