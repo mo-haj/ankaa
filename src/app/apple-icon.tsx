@@ -12,6 +12,12 @@ import { markDataUri, OG_GOLD, OG_GREEN } from "./_brand/mark-svg";
  * transparency, which is the second reason the ground is painted.
  * -------------------------------------------------------------------------- */
 
+/* Both build targets generate this once, at build time — nothing in it reads
+   the request. Declaring that is REQUIRED by `output: "export"` (the Pages
+   target), which refuses to collect a metadata image route without it, and is
+   a no-op on Vercel where it was already static. */
+export const dynamic = "force-static";
+
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 

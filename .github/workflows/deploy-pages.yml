@@ -1,0 +1,93 @@
+# =============================================================================
+# GitHub Pages — the PREVIEW build, at https://mo-haj.github.io/ankaa/
+#
+# ⚠️ THIS IS NOT THE LAUNCH HOST, and the difference is not cosmetic. Pages
+# serves static files only, so this job first strips the two things a static
+# export cannot run (see scripts/pages-preview/apply.mjs) and the deployed site
+# therefore has NO WORKING ENQUIRY FORM, no project overlays, no security
+# headers and no image optimisation. It is for showing the association's owner
+# the work. DEPLOY.md covers the server-hosted deploy that keeps all four.
+#
+# ⛔ REQUIRES Settings → Pages → Source = "GitHub Actions". While Source is set
+# to "Deploy from a branch", GitHub runs its own built-in Jekyll job instead of
+# this one and publishes the repository's README as the home page.
+#
+# The strip runs ONLY here, on a throwaway checkout. Nothing in the repository
+# changes, and `main` keeps the real form and the real overlay.
+# =============================================================================
+name: Deploy preview to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; let a run in progress finish.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          # 22, not 20 — Node 20 is deprecated for actions and the runner
+          # force-upgrades them anyway, which is where the warning came from.
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install
+        run: npm ci
+
+      - name: Strip server-only features
+        # Deletes @modal and the Server Action IN THE RUNNER. Throws if it no
+        # longer recognises what it is editing, which fails the deploy on
+        # purpose rather than shipping a half-transformed preview.
+        run: node scripts/pages-preview/apply.mjs
+
+      - name: Build static export
+        env:
+          # The only switch for the whole Pages target; next.config.ts reads it
+          # and adds output/basePath/trailingSlash/unoptimized. Unset elsewhere,
+          # so a local or server-hosted build is untouched.
+          GITHUB_PAGES: "true"
+          # basePath is /ankaa, so canonical URLs, the sitemap and the OG card
+          # must carry it too — without this they point at ankaa.example.
+          NEXT_PUBLIC_SITE_URL: https://mo-haj.github.io/ankaa
+        run: npm run build
+
+      - name: Add .nojekyll
+        # Belt and braces. This deploy path does not run Jekyll, but Jekyll
+        # skips underscore-prefixed directories and Next writes everything to
+        # `_next/`, so the one time it does run the site loads with no CSS.
+        run: touch out/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

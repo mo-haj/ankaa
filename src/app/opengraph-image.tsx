@@ -64,6 +64,12 @@ import { markDataUri, OG_GOLD, OG_GREEN, OG_PAPER } from "./_brand/mark-svg";
  * is the only correct way to put Arabic on this card.
  * ========================================================================== */
 
+/* Both build targets generate this once, at build time — nothing in it reads
+   the request. Declaring that is REQUIRED by `output: "export"` (the Pages
+   target), which refuses to collect a metadata image route without it, and is
+   a no-op on Vercel where it was already static. */
+export const dynamic = "force-static";
+
 export const alt = site.meta.title;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";

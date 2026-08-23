@@ -22,6 +22,11 @@ import { absoluteUrl } from "@/lib/site-url";
  *
  * `/styleguide` is never listed (and is disallowed in robots.ts).
  * -------------------------------------------------------------------------- */
+/* Build-time only — nothing here reads the request. `output: "export"` (the
+   Pages target) refuses to collect this route without the declaration, and it
+   is a no-op on Vercel where it was already static. */
+export const dynamic = "force-static";
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 

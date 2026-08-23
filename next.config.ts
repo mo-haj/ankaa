@@ -154,6 +154,48 @@ const contentSecurityPolicy = [
   "object-src 'none'",
 ].join("; ");
 
+/* -----------------------------------------------------------------------------
+ * GITHUB PAGES — a SECOND, REDUCED build target. Off unless GITHUB_PAGES=true.
+ *
+ * Vercel is the primary target and nothing below changes it: every option here
+ * is behind the flag, so `npm run dev`, `npm run build` and a Vercel deploy
+ * behave exactly as they did before this block existed.
+ *
+ * The repo is `mo-haj/ankaa`, so Pages serves it from the SUBPATH
+ * `https://mo-haj.github.io/ankaa` — hence `basePath`. Next rewrites its own
+ * <Link> hrefs and asset URLs for it; a hand-written `/images/x.webp` in a
+ * plain <img> or in CSS would NOT be rewritten and would 404 in production
+ * while working perfectly in dev. There are none today. Do not add one.
+ *
+ * ⛔ TWO FEATURES ARE REMOVED BEFORE THIS TARGET CAN BUILD AT ALL, by
+ * `scripts/pages-preview/apply.mjs`, which runs ONLY in the Pages workflow on
+ * a throwaway checkout. Both refusals are quoted from a real build:
+ * "Intercepting routes are not supported with static export" (the @modal
+ * project overlay) and "Server Actions are not supported with static export"
+ * (the enquiry form). Read that script before changing either feature.
+ *
+ * ⛔ WHAT THIS TARGET CANNOT DO, so nobody re-discovers it in production:
+ *
+ *   1. THE ENQUIRY FORM DOES NOT SEND. `src/app/actions/contact.ts` is a
+ *      Server Action and a static export has no server to run it on. There is
+ *      no partial version of this: no email, no rate limiting, no per-field
+ *      validation round-trip.
+ *   2. NO SECURITY HEADERS. `headers()` is a server feature. GitHub Pages
+ *      sends its own fixed set and there is no configuration for it, so the
+ *      CSP, HSTS and the rest simply do not exist on this target. They are
+ *      omitted below rather than silently ignored.
+ *   3. NO IMAGE OPTIMISATION. `unoptimized: true` serves the original .webp
+ *      at full size to every device. The AVIF work in `formats` is inert here.
+ *
+ * That makes Pages a genuine PREVIEW target — right for showing the owner, and
+ * not the launch host. DEPLOY.md §0 already gates a public launch on the
+ * client blockers; this adds a technical one.
+ * -------------------------------------------------------------------------- */
+const GITHUB_PAGES = process.env.GITHUB_PAGES === "true";
+
+/** The repo name, and therefore the subpath Pages serves this from. */
+const PAGES_BASE_PATH = "/ankaa";
+
 const nextConfig: NextConfig = {
   /* ---------------------------------------------------------------------------
    * `X-Powered-By: Next.js` on every response tells an attacker the framework
@@ -182,6 +224,10 @@ const nextConfig: NextConfig = {
      * ---------------------------------------------------------------------- */
     formats: ["image/avif", "image/webp"],
 
+    /* On the Pages target there is no optimiser, so the loader must be turned
+       off or `next build` refuses to export. See the GITHUB_PAGES block. */
+    ...(GITHUB_PAGES ? { unoptimized: true } : {}),
+
     /* -------------------------------------------------------------------------
      * `deviceSizes` and `imageSizes` are LEFT AT THE DEFAULTS ON PURPOSE, and
      * that is a finding, not an omission.
@@ -209,19 +255,31 @@ const nextConfig: NextConfig = {
      * ---------------------------------------------------------------------- */
   },
 
-  async headers() {
-    return [
-      {
-        // `/:path*` covers every route AND `/_next/*`, which matters: nosniff
-        // and the CSP have to apply to the JS chunks too, not just documents.
-        source: "/:path*",
-        headers: [
-          ...securityHeaders,
-          { key: "Content-Security-Policy", value: contentSecurityPolicy },
-        ],
-      },
-    ];
-  },
+  /* Static export writes plain files; `basePath` puts them under /ankaa and
+     `trailingSlash` emits `board/index.html` rather than `board.html`, which
+     is what GitHub Pages resolves reliably on a subpath. */
+  ...(GITHUB_PAGES
+    ? {
+        output: "export" as const,
+        basePath: PAGES_BASE_PATH,
+        trailingSlash: true,
+      }
+    : {
+        async headers() {
+          return [
+            {
+              // `/:path*` covers every route AND `/_next/*`, which matters:
+              // nosniff and the CSP have to apply to the JS chunks too, not
+              // just documents.
+              source: "/:path*",
+              headers: [
+                ...securityHeaders,
+                { key: "Content-Security-Policy", value: contentSecurityPolicy },
+              ],
+            },
+          ];
+        },
+      }),
 };
 
 export default nextConfig;
