@@ -85,34 +85,43 @@ export function Projects({ region }: ProjectsProps) {
 
         {/* ------------------------------------------------------- the filter */}
         <div className="border-line mt-16 flex flex-wrap items-center justify-between gap-x-8 gap-y-6 border-t pt-6">
-          <nav aria-label={site.a11y.regionChoice}>
-            <ul className="flex flex-wrap items-center gap-2">
-              {chips.map((chip) => {
-                const isActive = chip.slug === (active?.slug ?? null);
-                return (
-                  <li key={chip.slug ?? "all"}>
-                    <Link
-                      href={
-                        chip.slug ? `/?region=${chip.slug}#projects` : "/#projects"
-                      }
-                      aria-current={isActive ? "true" : undefined}
-                      className={cn(
-                        "text-body-sm inline-flex h-11 items-center gap-3 rounded-full border px-6 transition-colors duration-[var(--dur-fast)]",
-                        isActive
-                          ? "border-line-strong bg-veil-10 text-fg"
-                          : "border-line text-fg-muted hover:text-fg hover:bg-veil-05",
-                      )}
-                    >
-                      {chip.name}
-                      <span className="text-caption text-fg-subtle">
-                        {chip.count}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
+          {/* HIDDEN ON THE GITHUB PAGES PREVIEW, not deleted. The chips
+              link to `/?region=<slug>`, which <HomePage> reads server-side;
+              a static export has no server, so every chip would navigate and
+              filter nothing while the first chip stayed lit. A filter that
+              visibly does nothing is worse than no filter. The flag is unset
+              everywhere else, so dev and any server-hosted deploy render it
+              normally. Set in next.config.ts under GITHUB_PAGES. */}
+          {process.env.NEXT_PUBLIC_PAGES_PREVIEW !== "true" && (
+            <nav aria-label={site.a11y.regionChoice}>
+              <ul className="flex flex-wrap items-center gap-2">
+                {chips.map((chip) => {
+                  const isActive = chip.slug === (active?.slug ?? null);
+                  return (
+                    <li key={chip.slug ?? "all"}>
+                      <Link
+                        href={
+                          chip.slug ? `/?region=${chip.slug}#projects` : "/#projects"
+                        }
+                        aria-current={isActive ? "true" : undefined}
+                        className={cn(
+                          "text-body-sm inline-flex h-11 items-center gap-3 rounded-full border px-6 transition-colors duration-[var(--dur-fast)]",
+                          isActive
+                            ? "border-line-strong bg-veil-10 text-fg"
+                            : "border-line text-fg-muted hover:text-fg hover:bg-veil-05",
+                        )}
+                      >
+                        {chip.name}
+                        <span className="text-caption text-fg-subtle">
+                          {chip.count}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+          )}
 
           {/* The rail's affordance, in the client's own words. The arrow is
               `data-direction` + mirrored: "onward" in an RTL document points

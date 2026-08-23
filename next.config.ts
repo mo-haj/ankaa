@@ -263,6 +263,10 @@ const nextConfig: NextConfig = {
         output: "export" as const,
         basePath: PAGES_BASE_PATH,
         trailingSlash: true,
+        /* Readable from components. `?region=` filtering is server-side and
+           cannot work on a static host, so the region chips are hidden on this
+           target rather than left on screen doing nothing. See projects.tsx. */
+        env: { NEXT_PUBLIC_PAGES_PREVIEW: "true" },
       }
     : {
         async headers() {

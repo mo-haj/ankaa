@@ -62,6 +62,10 @@ jobs:
           # and adds output/basePath/trailingSlash/unoptimized. Unset elsewhere,
           # so a local or server-hosted build is untouched.
           GITHUB_PAGES: "true"
+          # Hides the region filter chips. next.config.ts also sets this under
+          # `env:`, but that inlining is not reliable for Server Components on
+          # Turbopack — setting it here is what the build actually reads.
+          NEXT_PUBLIC_PAGES_PREVIEW: "true"
           # basePath is /ankaa, so canonical URLs, the sitemap and the OG card
           # must carry it too — without this they point at ankaa.example.
           NEXT_PUBLIC_SITE_URL: https://mo-haj.github.io/ankaa
