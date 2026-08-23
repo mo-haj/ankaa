@@ -48,7 +48,24 @@ jobs:
           cache: "npm"
 
       - name: Install
-        run: npm ci
+        # ⚠️ `npm install`, NOT `npm ci`, and that is not laziness.
+        #
+        # `npm ci` refused on the runner:
+        #   npm error Missing: @emnapi/runtime@1.11.3 from lock file
+        #   npm error Missing: @emnapi/core@1.11.3 from lock file
+        #
+        # Those two are PEER dependencies of `@img/sharp-*-wasm32`, a sharp
+        # variant Linux resolves and Windows does not. The lockfile is authored
+        # on Windows, so it records them as peer requirements without ever
+        # resolving them — `npm install --package-lock-only` on Windows does not
+        # fix it either, because it still resolves for the host platform.
+        #
+        # `npm install` resolves per-platform and still honours the lockfile for
+        # everything already pinned in it. The cost, stated: this step can pick
+        # up a newer in-range version than a developer has locally. For a
+        # preview build that is the right trade; the launch host should use a
+        # lockfile generated on Linux and go back to `npm ci`.
+        run: npm install
 
       - name: Strip server-only features
         # Deletes @modal and the Server Action IN THE RUNNER. Throws if it no
