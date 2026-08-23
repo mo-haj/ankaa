@@ -1,0 +1,1398 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* =============================================================================
+   OPERATION ANKAA — design system
+   Owner: ASTRA.  Spec: SOVA recon brief §6, §12, §13, §14.
+
+   HOW THIS FILE IS ORGANISED
+     0.  The dark-variant decision (read this first — it explains the model)
+     1.  @theme          — static design tokens (fonts, type, colour, space,
+                           radius, elevation, motion). These generate utilities.
+     2.  @theme inline   — tokens that must resolve *per section* at runtime
+                           (the ground/theme layer) + the shadcn semantic layer.
+     3.  :root           — light ground values + the shadcn light mapping
+     4.  [data-theme="dark"], .dark — dark ground values + shadcn dark mapping
+     5.  @layer base     — element defaults, Arabic typography lock
+     6.  @layer components — .shell container, .kicker-rule, brand motifs
+     7.  Vendored keyframes (Magic UI marquee)
+
+   RTL DISCIPLINE (non-negotiable):
+   The document is dir="rtl". Every author-written class MUST use CSS LOGICAL
+   properties so the layout mirrors for free:
+
+       USE     ms-*  me-*  ps-*  pe-*  start-*  end-*
+               text-start  text-end  border-s-*  border-e-*
+               rounded-s-*  rounded-e-*  inset-inline-*
+
+       NEVER   ml-*  mr-*  pl-*  pr-*  left-*  right-*
+               text-left  text-right  border-l-*  border-r-*
+               rounded-l-*  rounded-r-*
+
+   A physical class is a bug here: it looks correct to an English-reading
+   developer and is mirrored-wrong for every actual user. ESLint warns on it.
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   0. THE DARK-VARIANT DECISION  (ASTRA — resolving KILLJOY's open conflict)
+   -----------------------------------------------------------------------------
+   The scaffold shipped TWO independent "is this dark?" signals:
+
+     a) `.dark`              — shadcn / next-themes site-wide dark MODE
+     b) `[data-theme="dark"]` — SOVA §13.3 per-section dark GROUND
+
+   Those are different axes and they collide in exactly one place that matters:
+   every vendored shadcn component styles itself with the `dark:` variant
+   (`dark:bg-input/30`, `dark:border-input`, …). Under the scaffold's
+   `@custom-variant dark (&:is(.dark *))`, an <Input> dropped inside a dark
+   SECTION would keep its light-mode styling and look broken — 17 components,
+   silently wrong, on roughly 45% of the page.
+
+   RESOLUTION — collapse to ONE axis: the SECTION GROUND is the truth.
+   This site has no theme toggle and none is planned; SOVA §13.5 specifies a
+   fixed light/dark alternation by section. So:
+
+     1. The `dark` variant fires on BOTH selectors (below). One line makes
+        every vendored `dark:` utility correct inside <Section theme="dark">
+        without forking a single component.
+     2. `[data-theme="dark"]` ALSO remaps the whole shadcn semantic layer
+        (--background/--foreground/--primary/--border/--ring/…), so components
+        that use semantic tokens rather than `dark:` utilities are correct too.
+     3. `.dark` is kept as an alias of the same token block, so if anyone ever
+        wires next-themes it still works — but it is NOT how this site themes.
+
+   JETT/NEON/CYPHER: put `data-theme` on the <Section>. Never on <html>.
+   -------------------------------------------------------------------------- */
+@custom-variant dark (&:is([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
+
+/* =============================================================================
+   1. @theme — STATIC TOKENS
+   Anything here generates Tailwind utilities and is safe to reference by name.
+   ============================================================================= */
+@theme {
+  /* ---------------------------------------------------------------------------
+     1.1 COLOUR — the palette (SOVA §13.1)
+     Three light surfaces, three dark, three inks per ground, brand, gold, lines.
+     Values are hex on purpose: they are the numbers the contrast audit was run
+     against (/styleguide prints the ratios), so they must stay literal.
+     ------------------------------------------------------------------------- */
+
+  /* Surfaces — light. Warm paper, not white. */
+  --color-surface-0: #fbfaf6; /* page ground */
+  --color-surface-1: #f6f4ee; /* alternating band */
+  --color-surface-2: #ece8dc; /* inset cards, the darkest light ground */
+
+  /* Surfaces — dark. The cinematic bands. */
+  --color-surface-inverse-1: #002724; /* brand green — hero, membership, contact */
+  --color-surface-inverse-2: #00201d; /* projects, modal */
+  --color-surface-inverse-3: #001613; /* footer floor */
+
+  /* Ink — on light ground.  AA-audited, see /styleguide. */
+  --color-ink-1: #0e1c19; /* headings          16.77 / 15.93 / 14.30 */
+  --color-ink-2: #3a4a46; /* body               8.94 /  8.49 /  7.63 */
+  --color-ink-3: #5c6763; /* meta, captions     5.62 /  5.34 /  4.79
+                             ASTRA CHANGED: SOVA proposed #69746f, which is
+                             3.96:1 on surface-2 and FAILS AA. Darkened to the
+                             nearest value that clears 4.5:1 on all three light
+                             surfaces while staying clearly lighter than ink-2. */
+
+  /* Ink — on dark ground. Alpha over the ground, so one set covers all three. */
+  --color-ink-inv-1: #ffffff; /*                15.96 / 17.15 / 18.68 */
+  --color-ink-inv-2: rgb(255 255 255 / 0.78); /* 10.07 / 10.73 / 11.50 */
+  --color-ink-inv-3: rgb(255 255 255 / 0.58); /*  6.16 /  6.42 /  6.73 — hard floor */
+
+  /* Brand green */
+  --color-brand-900: #002724; /* the brand green */
+  --color-brand-800: #0a3b36; /* hover / raised green */
+  --color-brand-600: #275c55; /* kickers on light — 7.32 / 6.95 / 6.24 */
+
+  /* ---------------------------------------------------------------------------
+     GOLD — sampled from the logo, not guessed.
+
+     `public/images/ankaa-mark.png` and `ankaa-logo.png` are flat-fill artwork.
+     45.7% / 37.3% of their opaque pixels are exactly #b8a57a. That is the
+     brand gold. The value the old site shipped (#b9aa81) is ΔE00 1.97 away and
+     hue-shifted the WRONG WAY: true gold sits at Lab a* +0.45 (warm), the old
+     value at a* −0.93 (cool/green). gold-500 is therefore corrected to the
+     measured fill, and 700/300 are re-derived from it — same hue angle
+     (88.96°), chroma tracking lightness — so all three read as one metal.
+
+     Gold policy (SOVA §13.4) — enforced, not advisory:
+       · gold-700  the ONLY gold allowed as text on a light ground
+       · gold-500  NON-TEXT ONLY: hairlines, dots, 1px borders, marks
+       · gold-300  text/CTA gold on dark grounds only
+       · one gold element per section, maximum
+       · gold never exceeds ~5% of a viewport — it is a metal, not a surface
+       · never: gold on gold, gold gradients, gold shadows, gold over photo
+     ------------------------------------------------------------------------- */
+  --color-gold-700: #756435; /* text on light — 5.54 / 5.26 / 4.72  (AA pass)
+                                ASTRA CHANGED: SOVA proposed #8e7f58, measured
+                                3.77 / 3.58 / 3.22 — it FAILS AA on all three
+                                light surfaces, including as large text on
+                                surface-2. Re-derived at L*=43 on the true gold
+                                hue: same metal, deeper shadow, legible. */
+  --color-gold-500: #b8a57a; /* the mark's exact fill. NON-TEXT ON LIGHT (2.31:1). */
+  --color-gold-300: #d7cca9; /* text on dark  —  9.96 / 10.70 / 11.65 (AA pass) */
+
+  /* Lines */
+  --color-line-1: rgb(0 39 36 / 0.12); /* default hairline on light */
+  --color-line-2: rgb(0 39 36 / 0.22); /* emphasised hairline on light */
+  --color-line-inv: rgb(255 255 255 / 0.14);
+  --color-line-inv-2: rgb(255 255 255 / 0.26);
+
+  /* ---------------------------------------------------------------------------
+     1.2 THE ALPHA LADDER (SOVA §13.2)
+     Six stops per ground replacing the old site's 46 hand-written rgba values.
+     Prefer the ground-aware `veil-*` tokens in §2 — these literals exist for
+     the cases where you need a fixed ground regardless of section theme.
+     ------------------------------------------------------------------------- */
+  --color-ink-a05: rgb(0 39 36 / 0.05);
+  --color-ink-a10: rgb(0 39 36 / 0.1);
+  --color-ink-a20: rgb(0 39 36 / 0.2);
+  --color-ink-a40: rgb(0 39 36 / 0.4);
+  --color-ink-a60: rgb(0 39 36 / 0.6);
+  --color-ink-a80: rgb(0 39 36 / 0.8);
+
+  --color-inv-a05: rgb(255 255 255 / 0.05);
+  --color-inv-a10: rgb(255 255 255 / 0.1);
+  --color-inv-a20: rgb(255 255 255 / 0.2);
+  --color-inv-a40: rgb(255 255 255 / 0.4);
+  --color-inv-a60: rgb(255 255 255 / 0.6);
+  --color-inv-a80: rgb(255 255 255 / 0.8);
+
+  /* ---------------------------------------------------------------------------
+     1.3 TYPE — 12 tokens, hard floor 13px (SOVA §12.4)
+     Nothing below 0.8125rem may exist as a token. That single rule is the
+     biggest luxury gain available: the old site had 12 sizes at or under 13px.
+
+     Line-heights are Arabic-calibrated and deliberately taller than a Latin
+     scale. Do NOT "fix" them. Arabic has no capital letters to form a visual
+     ceiling, and tashkeel sit above and below the baseline.
+     Tracking is 0 everywhere — enforced globally in @layer base.
+     ------------------------------------------------------------------------- */
+  /* ⛔ 1.18 → 1.4, AND THE NOTE ABOVE IS WHY IT HAD TO MOVE — operator,
+     2026-08-22, with a screenshot: "the words some of them is cutting by the
+     top need to make the hight a bit longer".
+
+     WHAT WAS HAPPENING. `hero.title.line2` is «بثقةٍ تُبنى خطوةً خطوة.» and it
+     wraps to two lines from 430 all the way to 1440. At 1.18 the line box for
+     68px type is 80px, and Alexandria's Arabic ink does not fit in it: the ط
+     ascenders and the ة dots of «خطوة خطوة.» climbed into the damma on «تُبنى»
+     and the kasratan under «بثقةٍ» on the line above. Nothing was clipped by
+     an `overflow` — both spans measure `overflow: visible` — the two lines
+     simply collided, which reads as cut-off letters.
+
+     THIS IS NOT THE LATIN MISTAKE THE NOTE ABOVE WARNS ABOUT. That warning is
+     against LOWERING these values toward a Latin scale; 1.18 was already below
+     what Arabic display type needs and was the one rung on this ladder that
+     had not been raised. Every other token was and still is Arabic-calibrated:
+     h1 1.28, h2 1.32, h3 1.4, body 1.9.
+
+     1.4 is the same value `--text-h3` already carries, and it clears the
+     tallest tashkeel in the headline at every width in the clamp with room to
+     spare. The headline grows from 321px to ~380px at 1440, which the
+     `min-h-svh` hero absorbs. `--text-display-2` is unused in production
+     (nothing renders `<Display level={2}>`) so it is left alone rather than
+     changed untested. */
+  --text-display-1: clamp(2.75rem, 6.2vw, 5.25rem); /* 44 → 84 */
+  --text-display-1--line-height: 1.4;
+  --text-display-1--font-weight: 600;
+
+  --text-display-2: clamp(2.25rem, 4.6vw, 4rem); /* 36 → 64 */
+  --text-display-2--line-height: 1.22;
+  --text-display-2--font-weight: 600;
+
+  --text-h1: clamp(2rem, 3.6vw, 3rem); /* 32 → 48 */
+  --text-h1--line-height: 1.28;
+  --text-h1--font-weight: 600;
+
+  --text-h2: clamp(1.75rem, 2.6vw, 2.25rem); /* 28 → 36 */
+  --text-h2--line-height: 1.32;
+  --text-h2--font-weight: 600;
+
+  --text-h3: clamp(1.375rem, 1.8vw, 1.625rem); /* 22 → 26 */
+  --text-h3--line-height: 1.4;
+  --text-h3--font-weight: 600;
+
+  --text-h4: 1.25rem; /* 20 */
+  --text-h4--line-height: 1.45;
+  --text-h4--font-weight: 600;
+
+  --text-lead: clamp(1.0625rem, 1.4vw, 1.25rem); /* 17 → 20 */
+  --text-lead--line-height: 1.85;
+
+  --text-body: 1.0625rem; /* 17 — the site's workhorse */
+  --text-body--line-height: 1.9;
+
+  --text-body-sm: 0.9375rem; /* 15 */
+  --text-body-sm--line-height: 1.85;
+
+  --text-label: 0.8125rem; /* 13 — THE FLOOR */
+  --text-label--line-height: 1.6;
+  --text-label--font-weight: 600;
+
+  --text-caption: 0.8125rem; /* 13 — THE FLOOR */
+  --text-caption--line-height: 1.7;
+
+  --text-quote: clamp(1.5rem, 2.4vw, 2rem); /* 24 → 32, Naskh */
+  --text-quote--line-height: 2;
+
+  --text-stat: clamp(2.25rem, 4vw, 3.5rem); /* 36 → 56, weight 500 not 600 */
+  --text-stat--line-height: 1.1;
+  --text-stat--font-weight: 500;
+
+  /* ---------------------------------------------------------------------------
+     1.4 SPACE, CONTAINER, GRID (SOVA §14.1–14.2)
+     Tailwind's --spacing base gives the whole numeric ladder. The APPROVED
+     rungs are: 0 1 2 3 4 6 8 12 16 24 32 40 50
+     (= 0 4 8 12 16 24 32 48 64 96 128 160 200px). Nothing off that ladder.
+     ------------------------------------------------------------------------- */
+  --spacing: 0.25rem;
+
+  --container-shell: 80rem; /* 1280 — the page container      → max-w-shell */
+  --container-wide: 93.75rem; /* 1500 — gallery/media bleed     → max-w-wide  */
+  --container-prose: 44rem; /*  704 — single-column reading  → max-w-prose */
+
+  /* Section rhythm (SOVA §14.3).
+     RULE: a light→dark or dark→light flip gets `lg`; same-theme siblings get
+     the default. The old site's flat 132px everywhere is exactly what made it
+     feel undifferentiated. */
+  --section-y-sm: clamp(4rem, 6vw, 5.5rem); /*  64 →  88 — tight pairs */
+  --section-y: clamp(5.5rem, 8vw, 8rem); /*  88 → 128 — default */
+  --section-y-lg: clamp(7rem, 10vw, 10rem); /* 112 → 160 — around theme flips */
+  --section-y-hero: clamp(7.5rem, 12vw, 12.5rem); /* 120 → 200 — first after hero */
+
+  /* ---------------------------------------------------------------------------
+     1.5 RADIUS — derived from the mark, not chosen (see §6 for the geometry)
+
+     The wing's outer edge is a true circular arc: R = 490.4px over a 321.2px
+     chord, mean deviation 0.91px across a 270px span. The three building
+     blocks step 85 → 123 → 171px tall: ratios 1.45× and 1.39×, mean 1.42 ≈ √2.
+
+     So the radius ladder steps by √2, and SOVA §14.4's five values sit on it:
+       8 · 8√2≈12 · 16 · 16√2≈24 · 32
+     ------------------------------------------------------------------------- */
+  --radius: 1rem; /* shadcn's base var */
+  --radius-xs: 0.25rem; /*  4 */
+  --radius-sm: 0.5rem; /*  8 — SOVA radius-sm */
+  --radius-md: 0.75rem; /* 12 — √2 rung; shadcn clamps against this */
+  --radius-lg: 1rem; /* 16 — SOVA radius-md */
+  --radius-xl: 1.5rem; /* 24 — SOVA radius-lg */
+  --radius-2xl: 2rem; /* 32 — SOVA radius-xl */
+  --radius-3xl: 2.5rem; /* 40 */
+  --radius-4xl: 3rem; /* 48 */
+
+  /* Semantic aliases — prefer these; they say what they are.
+     rounded-field / rounded-card / rounded-figure / rounded-media */
+  --radius-field: 0.5rem; /*  8 — inputs, chips, small controls */
+  --radius-card: 1rem; /* 16 — cards, form panels */
+  --radius-figure: 1.5rem; /* 24 — image figures, panels */
+  --radius-media: 2rem; /* 32 — hero-scale media */
+
+  /* The wing arc, as numbers (measured, §6). Use these for the sweep motif —
+     never eyeball a curve, it will not match the logo. */
+  --arc-radius-ratio: 1.527; /* arc radius ÷ its chord */
+  --arc-rise: 8.41%; /* sagitta ÷ chord — how far a sweep bows */
+  --arc-sweep: 38.2deg; /* the angle the wing subtends */
+
+  /* The building rhythm. The mark's three towers measure 85 / 123 / 171px:
+     ×1.45 then ×1.39 — mean 1.42, i.e. √2. Any stepped row (the stats band,
+     the process steps, a 3-up grid with rising cards) uses these so the
+     rhythm on the page is the rhythm in the logo. */
+  --step-ratio: 1.414;
+  --step-1: 1;
+  --step-2: 1.414;
+  --step-3: 2;
+
+  /* ---------------------------------------------------------------------------
+     1.6 ELEVATION — two shadows replace the old site's fourteen.
+     This is a hairline system. If you reach for a third shadow, you probably
+     want a border instead.
+     ------------------------------------------------------------------------- */
+  --shadow-sm: 0 8px 24px rgb(0 39 36 / 0.06);
+  --shadow-md: 0 12px 40px rgb(0 39 36 / 0.09);
+  --shadow-lg: 0 24px 70px rgb(0 39 36 / 0.12);
+
+  /* ---------------------------------------------------------------------------
+     1.7 MOTION (SOVA §14.4 / §15)
+     expo-out is the house ease. The old site got this right in three places
+     and used `ease` everywhere else.
+     ------------------------------------------------------------------------- */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+  --dur-fast: 200ms;
+  --dur-base: 350ms;
+  --dur-slow: 700ms;
+
+  /* Breakpoints stay Tailwind's defaults — 640 / 768 / 1024 / 1280 / 1536 —
+     replacing the old site's ad-hoc 380/520/820/960/1080/1180. The projects
+     pin threshold moves to `lg` (1024). Nothing to declare here. */
+
+  /* Magic UI marquee — vendored by `shadcn add @magicui/marquee`. */
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(calc(-100% - var(--gap)));
+    }
+  }
+  @keyframes marquee-vertical {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(calc(-100% - var(--gap)));
+    }
+  }
+}
+
+/* =============================================================================
+   2. @theme inline — RUNTIME TOKENS
+   These emit `var(--x)` rather than a literal, so a utility written once
+   resolves differently inside <Section theme="dark"> than on a light ground.
+   THIS is the section-theming mechanism (SOVA §13.3).
+   ============================================================================= */
+@theme inline {
+  /* --- Fonts. next/font sets the *-src vars on <html> (src/app/layout.tsx) --- */
+  --font-sans: var(--font-body);
+  --font-body: var(--font-body);
+  --font-display: var(--font-display);
+  --font-naskh: var(--font-naskh);
+  --font-heading: var(--font-display);
+
+  /* ---------------------------------------------------------------------------
+     2.1 THE GROUND LAYER — the whole section-theming API in eight tokens.
+
+         <section data-theme="dark">   is the entire API.
+
+     Utilities: bg-bg  text-fg  text-fg-muted  text-fg-subtle
+                border-line  border-line-strong
+                text-accent-gold  bg-accent-gold  border-accent-hair
+
+     NOTE ON NAMING — ASTRA deviation from SOVA §13.3, deliberate:
+     the brief calls the gold token `--accent`. shadcn ALREADY owns `--accent`
+     as its muted hover surface (`bg-accent` on every menu item, tab and
+     ghost-button hover). Taking that name would turn every hover state gold
+     and blow the "gold ≤5% of a viewport" rule on contact. The token is
+     therefore `--accent-gold`; shadcn's `--accent` is left alone.
+     ------------------------------------------------------------------------- */
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent-gold: var(--accent-gold); /* TEXT gold — flips 700 ⇄ 300 */
+  --color-accent-hair: var(--accent-hair); /* NON-TEXT gold — always gold-500 */
+  --color-kicker: var(--kicker); /* section labels: brand-600 ⇄ gold-300 */
+
+  /* Ground-aware alpha ladder: `bg-veil-10` is 10% of whatever the current
+     ground's foreground is. Six stops, per SOVA §13.2, but only one set. */
+  --color-veil-05: color-mix(in srgb, var(--fg) 5%, transparent);
+  --color-veil-10: color-mix(in srgb, var(--fg) 10%, transparent);
+  --color-veil-20: color-mix(in srgb, var(--fg) 20%, transparent);
+  --color-veil-40: color-mix(in srgb, var(--fg) 40%, transparent);
+  --color-veil-60: color-mix(in srgb, var(--fg) 60%, transparent);
+  --color-veil-80: color-mix(in srgb, var(--fg) 80%, transparent);
+
+  /* Ground-aware button tokens (see §3/§4 for the per-ground values). */
+  --color-btn-solid: var(--btn-solid-bg);
+  --color-btn-solid-fg: var(--btn-solid-fg);
+  --color-btn-solid-hover: var(--btn-solid-bg-hover);
+  --color-btn-gold: var(--btn-gold-bg);
+  --color-btn-gold-fg: var(--btn-gold-fg);
+  --color-btn-gold-hover: var(--btn-gold-bg-hover);
+
+  /* ---------------------------------------------------------------------------
+     2.2 shadcn semantic layer — kept intact so the 17 vendored components
+     stay coherent. Values are mapped onto the Ankaa palette in §3/§4.
+     ------------------------------------------------------------------------- */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* =============================================================================
+   3. LIGHT GROUND — the default
+   `:root` and an explicit [data-theme="light"] so a light section can be
+   nested inside a dark one and still be correct.
+   ============================================================================= */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* --- ground layer --- */
+  --bg: var(--color-surface-0);
+  --fg: var(--color-ink-1);
+  --fg-muted: var(--color-ink-2);
+  --fg-subtle: var(--color-ink-3);
+  --line: var(--color-line-1);
+  --line-strong: var(--color-line-2);
+  --accent-gold: var(--color-gold-700); /* 5.54:1 on surface-0 — AA */
+  --accent-hair: var(--color-gold-500); /* non-text: rules, dots, focus glow */
+  --kicker: var(--color-brand-600); /* 7.32:1 on surface-0 */
+
+  /* --- buttons on a light ground --- */
+  --btn-solid-bg: var(--color-brand-900);
+  --btn-solid-fg: var(--color-surface-0); /* 15.28:1 */
+  --btn-solid-bg-hover: var(--color-brand-800);
+  --btn-gold-bg: var(--color-gold-700);
+  --btn-gold-fg: var(--color-surface-0); /* 5.54:1 */
+  --btn-gold-bg-hover: #63552c;
+
+  /* --- gutter ladder (SOVA §14.1); consumed by .shell --- */
+  --gutter: 1.5rem; /* 24 mobile */
+
+  /* --- shadcn semantic layer, light --- */
+  --background: var(--color-surface-0);
+  --foreground: var(--color-ink-1);
+  --card: #ffffff;
+  --card-foreground: var(--color-ink-1);
+  --popover: #ffffff;
+  --popover-foreground: var(--color-ink-1);
+  --primary: var(--color-brand-900);
+  --primary-foreground: var(--color-surface-0);
+  --secondary: var(--color-surface-2);
+  --secondary-foreground: var(--color-ink-1);
+  --muted: var(--color-surface-1);
+  --muted-foreground: var(--color-ink-3);
+  --accent: var(--color-surface-2); /* shadcn hover surface — NOT gold */
+  --accent-foreground: var(--color-ink-1);
+  --destructive: #9a2b2b;
+  --border: var(--color-line-1);
+  --input: var(--color-line-2);
+  --ring: var(--color-gold-700); /* focus ring: 5.54:1 — clears 1.4.11 */
+  --chart-1: var(--color-brand-900);
+  --chart-2: var(--color-brand-600);
+  --chart-3: var(--color-gold-700);
+  --chart-4: var(--color-gold-500);
+  --chart-5: var(--color-surface-2);
+  --sidebar: var(--color-surface-1);
+  --sidebar-foreground: var(--color-ink-1);
+  --sidebar-primary: var(--color-brand-900);
+  --sidebar-primary-foreground: var(--color-surface-0);
+  --sidebar-accent: var(--color-surface-2);
+  --sidebar-accent-foreground: var(--color-ink-1);
+  --sidebar-border: var(--color-line-1);
+  --sidebar-ring: var(--color-gold-700);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 2rem; /* 32 */
+  }
+}
+@media (min-width: 1280px) {
+  :root {
+    --gutter: 3rem; /* 48 — matches Era */
+  }
+}
+
+/* =============================================================================
+   4. DARK GROUND
+   ONE block, TWO selectors — see the §0 decision. `[data-theme="dark"]` is how
+   this site themes; `.dark` is the next-themes alias kept alive on purpose.
+   ============================================================================= */
+[data-theme="dark"],
+.dark {
+  color-scheme: dark;
+
+  /* --- ground layer --- */
+  --bg: var(--color-surface-inverse-1);
+  --fg: var(--color-ink-inv-1);
+  --fg-muted: var(--color-ink-inv-2);
+  --fg-subtle: var(--color-ink-inv-3);
+  --line: var(--color-line-inv);
+  --line-strong: var(--color-line-inv-2);
+  --accent-gold: var(--color-gold-300); /* 9.96:1 on inverse-1 — AA */
+  --accent-hair: var(--color-gold-500); /* the metal itself, unchanged */
+  --kicker: var(--color-gold-300);
+
+  /* --- buttons on a dark ground --- */
+  --btn-solid-bg: var(--color-surface-0);
+  --btn-solid-fg: var(--color-brand-900); /* 15.28:1 */
+  --btn-solid-bg-hover: #ffffff;
+  --btn-gold-bg: var(--color-gold-300);
+  --btn-gold-fg: var(--color-brand-900); /* 9.96:1 */
+  --btn-gold-bg-hover: #e3dabf;
+
+  /* --- shadcn semantic layer, dark --- */
+  --background: var(--color-surface-inverse-1);
+  --foreground: var(--color-ink-inv-1);
+  --card: var(--color-surface-inverse-2);
+  --card-foreground: var(--color-ink-inv-1);
+  --popover: var(--color-surface-inverse-2);
+  --popover-foreground: var(--color-ink-inv-1);
+  --primary: var(--color-surface-0);
+  --primary-foreground: var(--color-brand-900);
+  --secondary: rgb(255 255 255 / 0.08);
+  --secondary-foreground: var(--color-ink-inv-1);
+  --muted: rgb(255 255 255 / 0.06);
+  --muted-foreground: var(--color-ink-inv-3);
+  --accent: rgb(255 255 255 / 0.1); /* shadcn hover surface — NOT gold */
+  --accent-foreground: var(--color-ink-inv-1);
+  --destructive: #ff8f8f;
+  --border: var(--color-line-inv);
+  --input: var(--color-line-inv-2);
+  --ring: var(--color-gold-300); /* focus ring: 9.96:1 */
+  --chart-1: var(--color-gold-300);
+  --chart-2: var(--color-gold-500);
+  --chart-3: var(--color-surface-2);
+  --chart-4: var(--color-brand-600);
+  --chart-5: var(--color-surface-0);
+  --sidebar: var(--color-surface-inverse-2);
+  --sidebar-foreground: var(--color-ink-inv-1);
+  --sidebar-primary: var(--color-gold-300);
+  --sidebar-primary-foreground: var(--color-brand-900);
+  --sidebar-accent: rgb(255 255 255 / 0.1);
+  --sidebar-accent-foreground: var(--color-ink-inv-1);
+  --sidebar-border: var(--color-line-inv);
+  --sidebar-ring: var(--color-gold-300);
+}
+
+/* Dark-section surface levels (SOVA §13.5). <Section theme="dark" surface={2}> */
+[data-theme="dark"][data-surface="2"] {
+  --bg: var(--color-surface-inverse-2);
+}
+[data-theme="dark"][data-surface="3"] {
+  --bg: var(--color-surface-inverse-3);
+}
+/* Light-section surface levels — the three-light run needs internal rhythm. */
+[data-theme="light"][data-surface="1"],
+:root[data-surface="1"] {
+  --bg: var(--color-surface-1);
+}
+[data-theme="light"][data-surface="2"],
+:root[data-surface="2"] {
+  --bg: var(--color-surface-2);
+}
+
+/* The one rule that makes `data-theme` an API: paint the ground and the ink. */
+[data-theme] {
+  background-color: var(--bg);
+  color: var(--fg);
+}
+
+/* =============================================================================
+   5. BASE LAYER
+   ============================================================================= */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+    /* Arabic needs more leading than Latin: taller ascenders/descenders, and
+       tashkeel sit above and below the baseline. 1.8 is deliberate. */
+    line-height: 1.8;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------------------------------------------------------------------
+     ARABIC LETTER-SPACING LOCK
+     Arabic is a CURSIVE script — adjacent letters physically join. Any
+     non-zero letter-spacing severs those joins and renders words as a row
+     of disconnected glyphs. Latin `tracking-*` utilities must NEVER reach
+     Arabic text. !important is deliberate: it has to beat the utility layer.
+     Opt a genuinely-Latin run back out with lang="en" or class="latin".
+     --------------------------------------------------------------------- */
+  html[dir="rtl"],
+  [dir="rtl"] :not([lang="en"], [lang="en"] *, .latin, .latin *) {
+    letter-spacing: 0 !important;
+  }
+
+  /* No uppercase, ever: Arabic is unicase. Label hierarchy is carried by
+     WEIGHT + the gold hairline (see .kicker-rule), never by tracked-out caps. */
+  [dir="rtl"] :not([lang="en"], [lang="en"] *, .latin, .latin *) {
+    text-transform: none !important;
+  }
+
+  /* Headings default to the display face. Sizes come from the type tokens —
+     apply `text-h1`/`text-h2`/… rather than relying on the element. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display;
+    font-weight: 600;
+    /* Arabic headings orphan badly — one word on its own line is common and
+       ugly. Well-supported now; costs nothing where it is not. */
+    text-wrap: balance;
+  }
+
+  h1 {
+    font-size: var(--text-h1);
+    line-height: var(--text-h1--line-height);
+  }
+  h2 {
+    font-size: var(--text-h2);
+    line-height: var(--text-h2--line-height);
+  }
+  h3 {
+    font-size: var(--text-h3);
+    line-height: var(--text-h3--line-height);
+  }
+  h4 {
+    font-size: var(--text-h4);
+    line-height: var(--text-h4--line-height);
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Selection uses the metal, not the brand green — green-on-green vanishes. */
+  ::selection {
+    background: var(--color-gold-500);
+    color: var(--color-brand-900);
+  }
+
+  /* Focus is a first-class visual, not an afterthought. Gold, 2px, offset so
+     it reads on both grounds; --ring is gold-700 on light (5.54:1) and
+     gold-300 on dark (9.96:1), both clearing WCAG 1.4.11's 3:1 for a
+     non-text indicator. Verified on /styleguide.
+
+     TRAP — do NOT add `outline-none` alongside `focus-visible:outline-*`.
+     In Tailwind v4, `outline-none` sets `--tw-outline-style: none` on the
+     element, and `outline-2` compiles to `outline-style: var(--tw-outline-style)`.
+     The two together silently produce an invisible focus ring. The scaffold's
+     shadcn components shipped exactly that pairing; ASTRA removed it from
+     button/input/textarea/accordion. If you re-add it, keyboard users lose
+     the focus indicator and nothing in the build will tell you. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* ---------------------------------------------------------------------------
+     ⛔ THE NATIVE <select> POPUP IS NOT PART OF THE PAGE — operator, 2026-08-22,
+     with a screenshot of the region picker open.
+
+     THE BUG. The enquiry form sits in a `theme="dark"` section, so it inherits
+     `color: var(--fg)` — near-white. `<option>` inherits that too, but the
+     dropdown list itself is drawn by the OPERATING SYSTEM on its own ground,
+     which on Windows is white. Result: white text on a white popup. The
+     placeholder row survived because it is `disabled` (the OS greys it) and one
+     row survived because it was highlighted (blue selection ground) — every
+     other region was invisible. It looked like the list had two entries and a
+     large blank area.
+
+     THE FIX IS TWO SYSTEM COLOURS, NOT TWO HEX VALUES. `Canvas` and
+     `CanvasText` are the CSS system-colour keywords for "whatever this platform
+     paints a document in", so the popup follows the visitor's own OS light or
+     dark setting. Hard-coding white-on-ink here would fix Windows-light and
+     break Windows-dark the same way it is broken now.
+
+     `select` only. `<option>` inside anything else is not a thing, and scoping
+     it keeps the rule from reaching the styled radio chips beside it. */
+  select option {
+    background-color: Canvas;
+    color: CanvasText;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Arabic-Indic (٠١٢٣) vs Western (0123) digits are a CONTENT decision.
+     JETT: choose per-string in src/content. Never force it globally. */
+}
+
+/* =============================================================================
+   6. COMPONENT LAYER — the container and the brand motifs
+   ============================================================================= */
+@layer components {
+  /* ---------------------------------------------------------------------------
+     6.1 .shell — the page container (SOVA §14.1)
+     width: min(100% - 2·gutter, container). The gutter steps 24 → 32 → 48.
+     Use the <Container> component rather than the class where you can.
+     ------------------------------------------------------------------------- */
+  .shell {
+    width: min(100% - 2 * var(--gutter), var(--container-shell));
+    margin-inline: auto;
+  }
+  .shell-wide {
+    width: min(100% - 2 * var(--gutter), var(--container-wide));
+    margin-inline: auto;
+  }
+  .shell-prose {
+    width: min(100% - 2 * var(--gutter), var(--container-prose));
+    margin-inline: auto;
+  }
+  .shell-bleed {
+    width: 100%;
+  }
+
+  /* ---------------------------------------------------------------------------
+     6.2 .kicker-rule — the section label mark (SOVA §12.3 rule 2)
+     13px / weight 600 / brand-600 (or gold-300 on dark) + a 28px gold hairline.
+     Arabic cannot use tracked-out caps for label hierarchy, so weight plus this
+     rule does the whole job. TRACKING IS REMOVED — that is the fix vs the old
+     site, which shipped +.05em on Arabic and severed the letter joins.
+     The rule sits on the INLINE-START side and mirrors for free.
+     ------------------------------------------------------------------------- */
+  .kicker-rule::before {
+    content: "";
+    display: inline-block;
+    inline-size: 28px;
+    block-size: 1px;
+    background: var(--accent-hair);
+    vertical-align: middle;
+    margin-inline-end: 0.75rem;
+    flex: none;
+  }
+
+  /* ---------------------------------------------------------------------------
+     6.3 .wing-sweep — the signature curve as a divider.
+
+     Not a guess. The mark's wing edge is a circular arc of R = 490.4px over a
+     321.2px chord (mean deviation 0.91px), so its sagitta is 8.41% of its span
+     and it subtends 38.2°. This reproduces that exact bow at any width using a
+     quadratic whose control point is 2× the sagitta (a quadratic's apex sits at
+     half its control height).
+
+     One per section, maximum. It counts against the gold budget.
+     ------------------------------------------------------------------------- */
+  .wing-sweep {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    overflow: visible;
+    color: var(--accent-hair);
+  }
+
+  /* Hairline helpers — this system is built from 1px rules, not boxes. */
+  .rule {
+    border: 0;
+    border-block-start: 1px solid var(--line);
+    inline-size: 100%;
+  }
+  .rule-gold {
+    border: 0;
+    border-block-start: 1px solid var(--accent-hair);
+  }
+}
+
+/* =============================================================================
+   7. UTILITIES — small, named, and few on purpose.
+   ============================================================================= */
+
+/* Latin runs inside the RTL tree (a wordmark, a URL, a map control).
+   `.latin` opts OUT of the letter-spacing lock and isolates bidi. */
+@utility latin {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-feature-settings: normal;
+}
+
+/* A scroller that keeps its scrolling and loses its scrollbar.
+
+   ⛔ NOT a general-purpose "hide the ugly bar". Use it only where the box is a
+   TRANSIENT scroller — one that another mechanism takes over once JS is up.
+   The projects rail is the case it exists for: its shipped base state is
+   `overflow-x: auto` (deliberately — see `projects-rail.tsx`), and both live
+   modes switch it to `overflow: hidden`. On a platform with classic, non-overlay
+   scrollbars (Windows) that means a grey bar paints under the rail on every
+   load and then vanishes when the pin engages. Wheel, swipe, drag and
+   keyboard scrolling all still work here; only the painted bar is gone. */
+@utility no-scrollbar {
+  scrollbar-width: none; /* Firefox, and Chromium ≥121 */
+  &::-webkit-scrollbar {
+    display: none; /* Safari, and older Chromium */
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   7.1 DIRECTIONAL ICONS — the `data-direction` contract (SOVA §16.3)  [CYPHER]
+
+   An arrow or chevron that means "onward" / "back" is a DIRECTIONAL icon and
+   must mirror with the document; a logo, a play button, a checkmark and the
+   `↗` "opens elsewhere" diagonal must not. The convention is one attribute:
+
+       <ArrowRight data-direction />     mirrors
+       <AnkaaMark />                     never mirrors  (AGENTS §12)
+
+   ⛔ WHY THIS RULE IS HERE AND NOT ONLY IN `ui/button.tsx`. The mirror used to
+   live exclusively in the button's own class list
+   (`[&_svg[data-direction]]:rtl:-scale-x-100`), so `data-direction` did
+   NOTHING on the icons outside a <Button> — the "back to projects" link on
+   /projects/[slug] carried the attribute, and a comment saying an LTR build
+   would flip it, and nothing flipped it. Two other call sites worked around
+   the gap by repeating `rtl:-scale-x-100` by hand. One rule, one convention.
+
+   `scale` is a SEPARATE property from `translate` in Tailwind v4, so this
+   composes with the button's hover travel (§8.5) and the card's hover lift
+   instead of overwriting either. Author every directional icon pointing the
+   way it should point in LTR and let this mirror it.
+   -------------------------------------------------------------------------- */
+[dir="rtl"] svg[data-direction] {
+  scale: -1 1;
+}
+
+/* -----------------------------------------------------------------------------
+   7.2 VENDORED MARQUEE — two corrections  [CYPHER]
+
+   `.animate-marquee` is Magic UI's, pulled in by `shadcn add @magicui/marquee`,
+   and it arrived broken in two independent ways. Both are fixed here rather
+   than in `ui/marquee.tsx` so a re-run of `shadcn add` cannot lose them.
+
+   1. IT NEVER ANIMATED AT ALL. Magic UI's animation is
+      `marquee var(--duration) infinite linear`, and `--duration` is set by the
+      component ON THE ELEMENT (`[--duration:38s]`). Tailwind v4's `@theme`
+      route puts that string in a `--animate-marquee` custom property on
+      `:root` — and a `var()` inside a custom property is substituted where the
+      property is DECLARED, not where it is used. `--duration` does not exist
+      on `:root`, so `--animate-marquee` computed to the guaranteed-invalid
+      value, `animation: var(--animate-marquee)` was dropped, and every block
+      of the strip sat still. Measured: `getComputedStyle(...).animationName`
+      was `none` and the four blocks held identical rects across 19 seconds.
+      Declaring the longhands here resolves `--duration` on the right element.
+      `animation-play-state` is deliberately NOT set, so the component's
+      `group-hover:[animation-play-state:paused]` still wins.
+
+   2. THE LOOP WAS LTR-ONLY (SOVA §16.9/§16.11). `@keyframes marquee` ends at
+      `translateX(calc(-100% - var(--gap)))`. In an RTL flex row the blocks are
+      laid out from the container's RIGHT edge leftward, so the spare copies
+      hang off the LEFT — moving everything further left drags the strip away
+      from the right edge and opens a `block width + gap` hole there before it
+      snaps back. RTL has to travel the other way, which puts the next copy
+      exactly where the previous one was. The vertical variant runs on an axis
+      with no direction problem and is unchanged apart from fix 1.
+   -------------------------------------------------------------------------- */
+.animate-marquee {
+  animation-name: marquee;
+  animation-duration: var(--duration, 40s);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.animate-marquee-vertical {
+  animation-name: marquee-vertical;
+  animation-duration: var(--duration, 40s);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+[dir="rtl"] .animate-marquee {
+  animation-name: marquee-rtl;
+}
+
+@keyframes marquee-rtl {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(100% + var(--gap)));
+  }
+}
+
+/* =============================================================================
+   8. MOTION LAYER — NEON
+   Owner: NEON. Spec: SOVA §15, §17.
+
+   Six rules live here rather than in a component, because all six have to be
+   TRUE BEFORE ANY JAVASCRIPT RUNS. A client effect fires after first paint and
+   never fires at all with scripting off, so anything that must be correct at
+   paint has to be CSS. Everything else — every timeline, every scrub — is in
+   `src/components/motion/`.
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   8.1 THE INTRO GUARD — «من المخطط إلى البيت» (SOVA §17)
+
+   `data-ankaa-intro="run"` is written on <html> by the blocking script in
+   `src/app/layout.tsx`, BEFORE the first paint, on every DOCUMENT LOAD where
+   the visitor has not asked for reduced motion.
+
+   ⭐ NEON N2 — "every document load", not "the first visit of the session".
+   The script used to carry a `sessionStorage["ankaa-intro"]` flag that made
+   the sequence once-per-tab; the operator wants it on every refresh, so the
+   flag is gone. Being an inline `<script>` is the guard: it executes once per
+   document and a client-side navigation never re-executes it, so the intro
+   still cannot replay on a route change. Nothing in this rule changed.
+
+   Why it has to be pre-paint and not an effect: the hero's resting state is the
+   FINISHED hero (base state = final state, SOVA §10.5), so an intro started
+   from a React effect would flash the assembled hero, cover it with paper, and
+   then reveal it again. The two rules below put the page into step 1 of the
+   sequence — paper, no header — before anything has been painted at all.
+
+   `<HeroMotion>` removes the attribute at 2.4s and the header fades itself in
+   from the transition on the base rule. The script also removes it on a 6s
+   failsafe, so a broken bundle cannot leave a visitor on a blank cream page.
+   -------------------------------------------------------------------------- */
+[data-slot="site-header"] {
+  transition: opacity 600ms var(--ease-out-expo);
+}
+
+html[data-ankaa-intro="run"] [data-hero-paper] {
+  opacity: 1;
+}
+
+/* ⛔ BRIMSTONE — `body:has([data-slot="hero-media"])` IS LOAD-BEARING. IT FIXES
+   A MEASURED BUG; DO NOT SIMPLIFY IT BACK OUT.
+
+   The guard script in `layout.tsx` runs before <body> exists, so it cannot ask
+   which route it is on — it arms `data-ankaa-intro="run"` on EVERY route. On
+   `/` that is right. On a hero-less route (`/privacy`, `/projects/[slug]`, and
+   the 404 / error boundaries) it was hiding the site header for the FULL 6s
+   failsafe, because <HeroMotion> — the thing that normally clears the
+   attribute at 2.4s — only mounts on the home page. Nothing else clears it.
+
+   MEASURED on `/privacy`, first visit of a session, headless Edge at 1440:
+   computed `opacity` on `[data-slot="site-header"]` was `0` at +1.5s and at
+   +3.5s, and `1` at +7.5s. Six seconds of no header, no navigation and no way
+   back, on every deep-linked page — and it fails silently, because a second
+   visit in the same session has the sessionStorage flag and looks perfect.
+
+   The fix is the same signal §8.2 below already uses — "does this document
+   contain a hero?" — and `:has()` is live, so on `/` it matches at first paint
+   and the intro is unchanged. */
+html[data-ankaa-intro="run"] body:has([data-slot="hero-media"]) [data-slot="site-header"] {
+  opacity: 0;
+  transition: none;
+}
+
+/* -----------------------------------------------------------------------------
+   8.2 THE HEADER'S GROUND — the fix for a live legibility bug
+
+   The header is transparent over the dark hero and solid everywhere else, and
+   the switch is `data-scrolled` on `[data-slot="site-header"]` (set by
+   `<HeaderMotion>`). But a route with NO hero — /privacy, /projects/[slug] —
+   must be solid at scroll 0, at first paint, with JS disabled. JavaScript
+   cannot deliver any of those three, so the rule is here.
+
+   `:has()` is doing real work: it asks "does this document contain a hero?"
+   and there is no other signal available to CSS. Unlayered on purpose — it has
+   to beat the `opacity-0` utility on the backdrop, which lives in @layer
+   utilities.
+   -------------------------------------------------------------------------- */
+body:not(:has([data-slot="hero-media"])) [data-slot="header-backdrop"] {
+  opacity: 1;
+}
+
+/* -----------------------------------------------------------------------------
+   8.3 data-prevent-flicker — the #1 SplitText-in-React bug (SOVA §15.5)
+
+   SplitText re-parents the element it splits. Between first paint and the
+   moment `onSplit` runs, an unhidden target shows its unsplit lines and then
+   jumps — the flicker Era ships this guard on six elements to avoid.
+
+   ⛔ THE THREE ESCAPES BELOW ARE NOT OPTIONAL. A pre-hide with no escape means
+   a visitor with JS disabled gets a hero with no headline, which is a far worse
+   bug than the one it fixes. `scripting: none` covers no-JS; the reduced-motion
+   query covers the path where `<HeroMotion>` deliberately does nothing.
+
+   ⭐ THE THIRD ESCAPE, and why two were not enough. The first two enumerate
+   "script will never run". They say nothing about "script has not run YET",
+   and that is a state a real visitor sits in for a long time. FADE measured it:
+
+     Slow 3G            hero blank 22.0s — all five nodes still
+                        `visibility:hidden` at 1s, 3s AND 8s
+     Fast 3G            8.9s
+     one JS chunk 404s  blank FOREVER — the `<h1>` still occupies 297px of
+                        layout at 9s and is invisible
+
+   `media (scripting: none)` does not fire in either case: scripting IS enabled,
+   the bundle is merely late or gone. So the escape has to come from the one
+   piece of JS that cannot be late — the inline `INTRO_GUARD` in `layout.tsx`,
+   which arms a 1.8s timer that stamps `data-flicker-timeout` on `<html>`.
+
+   Specificity is deliberate: `html[data-flicker-timeout]` is (0,2,0) against
+   the (0,1,0) hide above, so it wins without `!important`. It stays unlayered
+   for the same reason the rest of §8 is.
+
+   Once stamped it is never removed — GSAP owns visibility from that point on
+   via `autoAlpha`, whose inline style beats any stylesheet. `hero-motion.tsx`
+   checks for this attribute and skips its entrance tweens when it finds it, so
+   a late bundle reveals the hero and then leaves it alone rather than fading in
+   content the visitor has already been reading.
+   -------------------------------------------------------------------------- */
+[data-prevent-flicker] {
+  visibility: hidden;
+}
+
+@media (scripting: none), (prefers-reduced-motion: reduce) {
+  [data-prevent-flicker] {
+    visibility: visible;
+  }
+}
+
+html[data-flicker-timeout] [data-prevent-flicker] {
+  visibility: visible;
+}
+
+/* -----------------------------------------------------------------------------
+   8.4 will-change, scoped (SOVA §15.5)
+
+   The live site leaves `will-change` permanently set on gallery figures and
+   images, which promotes them to their own compositor layer for the entire
+   session whether or not anything is moving. These two are the only elements
+   that carry it here, they are the two largest scrubbed layers on the page, and
+   both are genuinely in motion for as long as they are on screen.
+   -------------------------------------------------------------------------- */
+[data-slot="hero-media"],
+[data-contact-bg] {
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="hero-media"],
+  [data-contact-bg] {
+    will-change: auto;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   8.5 BUTTONS — the pointer micro-interaction (SOVA §15.3, "Buttons / CTAs")
+
+   `whileHover={{ y: -2 }}`, `whileTap={{ scale: 0.98 }}` and an arrow that
+   travels along the INLINE axis. Written in CSS rather than in Framer, and the
+   reason is worth stating because it is a deliberate departure from the brief:
+
+     <Button> is a Server Component used in eleven sections, and several of
+     those usages are `asChild` around a <Link>. Marking it `"use client"` to
+     win a 2px lift would put a client boundary on most of the page and force
+     `motion.create(Slot.Root)` into the middle of the design system's most
+     used primitive. In CSS the same interaction costs nothing, works before
+     hydration and with scripting off, and — the part that actually matters —
+     keeps ONE system driving `transform` on a button. That is §15.1's real
+     rule; "Framer owns pointer" is how it is usually spelled, but an element
+     driven by exactly one owner is what it is for.
+
+   The optional magnetic hover (`gsap.quickTo`) is NOT built, and must not be
+   added on top of this: GSAP would write `transform` on the same element that
+   the rules below move, which is the collision §15.1 forbids. Pick one.
+
+   `translate` and `scale` are separate CSS properties in Tailwind v4, not
+   `transform` functions, so the lift below composes with the arrow's existing
+   `rtl:-scale-x-100` mirror instead of overwriting it.
+
+   Gated on `(hover: hover) and (pointer: fine)`: on a touch screen `:hover`
+   sticks after a tap, which would leave a button lifted 2px until the next
+   interaction. And on `no-preference`, so reduced motion gets the state
+   changes without the movement.
+   -------------------------------------------------------------------------- */
+[data-slot="button"] {
+  transition-property: background-color, border-color, color, opacity, translate,
+    scale;
+}
+
+[data-slot="button"] [data-direction] {
+  transition: translate var(--dur-base) var(--ease-out-expo);
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  [data-slot="button"]:hover {
+    translate: 0 -2px;
+  }
+  [data-slot="button"]:active {
+    translate: 0 0;
+    scale: 0.98;
+  }
+  /* "Onward" points at the inline-END edge — left in Arabic, right in English.
+     The arrow icon is already mirrored by the button's own
+     `[&_svg[data-direction]]:rtl:-scale-x-100`; this moves it. */
+  [dir="rtl"] [data-slot="button"]:hover [data-direction] {
+    translate: -4px 0;
+  }
+  [dir="ltr"] [data-slot="button"]:hover [data-direction] {
+    translate: 4px 0;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   8.6 THE BLUEPRINT'S RESTING STATE IS ABSENT — NEON N3
+
+   The hero's line drawing belongs to the intro and to nothing else. It used to
+   be drawn during the sequence and then left on the photograph forever at
+   `text-veil-20`, where it competes with the render for the rest of the visit.
+   `hero-motion.tsx` now fades it out at 2.4s, on the beat that releases the
+   header — and this rule is the other half of that change.
+
+   ⛔ IT IS HERE AND NOT IN `hero.tsx` BECAUSE IT HAS TO BE TRUE BEFORE ANY
+   JAVASCRIPT RUNS. That is the same reason the rest of §8 exists. Four
+   different visitors have to see the same hero (SOVA §10.5, base state = final
+   state): the one who watched the whole sequence, the one who arrived by a
+   client-side navigation and got no intro, the one with
+   `prefers-reduced-motion`, and the one whose bundle 404'd. Only the first of
+   those runs any code at all, so "absent" has to be the CSS state and the
+   intro has to be the thing that lifts it — `gsap.set(svg, { opacity: 1 })`,
+   once, at the top of the timeline.
+
+   ⚠ `text-veil-20` on the element in `hero.tsx` is still doing work and must
+   not be removed as dead: `hero-motion.tsx` reads `getComputedStyle(svg).color`
+   to find the hairline the ink cools TO during the cross-fade. It is the
+   colour that is load-bearing now, not the visibility.
+   -------------------------------------------------------------------------- */
+[data-slot="hero-blueprint"] {
+  opacity: 0;
+
+  /* ⛔ ABSENT BY DEFAULT, AND THE DEFAULT IS THE COMMON CASE. The drawing is
+     authored in `hero.webp`'s own 1672x941 space and stretched over the
+     image's box with `preserveAspectRatio="xMidYMid slice"`, so it is only
+     ever registered to the LANDSCAPE render. Every box that shows the PORTRAIT
+     render (`main-vertical.webp`, selected by `<picture>` at
+     `max-aspect-ratio: 1/1`) must therefore have no drawing at all — over that
+     photograph the outline traces nothing, which is SOVA §17's one stated
+     risk. This used to be `hidden md:block` in `hero.tsx`, a width-only test
+     that knew nothing about which render was on screen.
+
+     ⚠ THE QUERY BELOW IS `HERO_BLUEPRINT_VISIBLE` FROM `@/lib/hero-frame`,
+     BYTE FOR BYTE. `hero-motion.tsx` passes that constant to `matchMedia` to
+     decide whether to play the blueprint beat at all; if these two ever
+     disagree, the intro animates an invisible SVG for 1.5s (a blank screen on
+     the way in) or lights a visible one it never fades back down. */
+  display: none;
+}
+
+@media (min-width: 768px) and (aspect-ratio > 1/1) {
+  [data-slot="hero-blueprint"] {
+    display: block;
+  }
+}
+
+/* =============================================================================
+   9. NO-JS FALLBACKS — FADE
+
+   §8.3 already carries one `(scripting: none)` escape, for the pre-hidden hero
+   type. These are the other two states FADE measured, and both have the same
+   shape: a control that is VISIBLE and INERT, which is worse than no control.
+
+   Every fallback below is `display: none` by default. A visitor with JS pays
+   nothing to receive it and nothing to render it; only the media query turns it
+   on. Nothing here is a `<noscript>` element — React serialises `<noscript>`
+   children as text on the server and as markup on the client, which is a
+   hydration mismatch waiting to happen, and a CSS pair costs the same.
+   ============================================================================= */
+
+[data-slot="faq-static"],
+[data-slot="header-nojs-nav"] {
+  display: none;
+}
+
+@media (scripting: none) {
+  /* --- the FAQ (FADE 3) -----------------------------------------------------
+     Radix renders `isOpen && children`, so a CLOSED panel serialises an empty
+     div: without JS all four answers were absent from the document, not merely
+     hidden. `forceMount` does not fix it — it pins every panel open forever.
+     `faq.tsx` ships the answers a second time as a static <dl>; here the two
+     swap places. */
+  [data-slot="faq-static"] {
+    display: block;
+  }
+  [data-slot="faq-interactive"] {
+    display: none;
+  }
+
+  /* --- the mobile menu (FADE 5) ---------------------------------------------
+     <MobileNav> is a Radix Dialog. With scripting off its trigger was visible,
+     focusable and completely inert, and the only surviving navigation was in
+     the footer ~19,000px down the home page. */
+  [data-mobile-nav-trigger] {
+    display: none;
+  }
+  [data-slot="header-nojs-nav"] {
+    display: block;
+  }
+
+  /* The header can never learn it has scrolled without JS, so its backdrop
+     would stay transparent for the whole visit — including under the strip
+     above. §8.2's `:has()` rule does exactly this for hero-less routes; with no
+     scripting, EVERY route is in that position. */
+  [data-slot="header-backdrop"] {
+    opacity: 1;
+  }
+}
+
+/* =============================================================================
+   10. PRINT — FADE 4
+
+   There was no `@media print` block at all. Seven sections are `theme="dark"`,
+   so their ink is `--color-ink-inv-*` — near-white — and every browser defaults
+   "Background graphics" to OFF. White ink on unpainted paper is **1.00:1**: the
+   membership terms and the contact details printed as blank space.
+
+   The fix is one remap, not a rewrite. `data-theme` is a token API (§7 of
+   AGENTS.md), so pointing the dark ground's nine tokens at the light values
+   makes every component that was ever written against them correct on paper —
+   including ones that do not exist yet.
+
+   ⚠️ SPECIFICITY. The surface-level rules at §4 are `[data-theme="dark"]
+   [data-surface="2"]` — (0,2,0) — and a media query adds nothing to
+   specificity. The `--bg` override therefore has to repeat those selectors at
+   equal weight and win on source order, which it does by being last in the
+   file. Dropping the two `[data-surface]` selectors below silently restores
+   dark grounds on surfaces 2 and 3.
+   ============================================================================= */
+
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  [data-theme="dark"],
+  [data-theme="dark"][data-surface="2"],
+  [data-theme="dark"][data-surface="3"],
+  .dark {
+    color-scheme: light;
+
+    --bg: #ffffff;
+    --fg: var(--color-ink-1);
+    --fg-muted: var(--color-ink-2);
+    --fg-subtle: var(--color-ink-3);
+    --line: var(--color-line-1);
+    --line-strong: var(--color-line-2);
+    /* gold-300 is a 9.96:1 ink on inverse-1 and roughly 1.6:1 on paper.
+       gold-700 is the only gold AGENTS §8 allows as text on a light ground. */
+    --accent-gold: var(--color-gold-700);
+    --accent-hair: var(--color-gold-700);
+    --kicker: var(--color-brand-600);
+
+    --btn-solid-bg: transparent;
+    --btn-solid-fg: var(--color-ink-1);
+    --btn-gold-bg: transparent;
+    --btn-gold-fg: var(--color-ink-1);
+
+    --background: #ffffff;
+    --foreground: var(--color-ink-1);
+  }
+
+  /* Light sections keep their ink; only their cream grounds go to paper, so a
+     visitor who prints WITH background graphics on does not spend a cartridge
+     on seven full-bleed blocks of green. */
+  :root,
+  [data-theme="light"],
+  [data-theme="light"][data-surface="1"],
+  [data-theme="light"][data-surface="2"] {
+    --bg: #ffffff;
+  }
+
+  /* Chrome with no meaning on paper. The header is `position: fixed`, which
+     some engines repeat on every sheet. */
+  [data-slot="site-header"],
+  [data-slot="header-nojs-nav"],
+  [data-slot="header-progress"],
+  [data-mobile-nav-trigger] {
+    display: none !important;
+  }
+
+  /* Decorative layers: photographs, scrims, the paper ground and the blueprint
+     overlay. All are `aria-hidden` art direction, all of them are what makes
+     the hero legible on screen, and none of them survives a printer. */
+  [data-slot="hero-media"],
+  [data-hero-paper],
+  [data-slot="hero-blueprint"],
+  [data-contact-bg] {
+    display: none !important;
+  }
+
+  /* The type is pre-hidden until GSAP reveals it (§8.3). Printing before
+     hydration — or from a page whose bundle never arrived — would otherwise
+     print the hero as blank space, which is the same bug on paper. */
+  [data-prevent-flicker] {
+    visibility: visible !important;
+  }
+
+  /* The FAQ prints as answers, not as four collapsed questions. Same pair as
+     §9, different trigger. */
+  [data-slot="faq-static"] {
+    display: block !important;
+  }
+  [data-slot="faq-interactive"] {
+    display: none !important;
+  }
+
+  /* The rail is a pinned, GSAP-transformed horizontal track: on paper it would
+     print whichever slice happened to be on screen. Unset the transform and let
+     the six cards wrap down the page. */
+  [data-slot="projects-pin"],
+  [data-slot="projects-viewport"],
+  [data-slot="projects-track"] {
+    height: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+  [data-slot="projects-track"] {
+    display: block;
+  }
+  [data-slot="project-card"] {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  [data-slot="project-card"],
+  [data-slot="accordion-item"],
+  [data-slot="faq-static"] > *,
+  figure,
+  blockquote {
+    break-inside: avoid;
+  }
+
+  /* A printed link is a dead end unless it says where it goes. `isolate` keeps
+     the LTR URL from re-ordering the Arabic sentence around it (SOVA §16.8);
+     `tel:` and `mailto:` are left alone because their label already IS the
+     value on this site. */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-size: 0.8125rem;
+    color: var(--color-ink-3);
+  }
+}
