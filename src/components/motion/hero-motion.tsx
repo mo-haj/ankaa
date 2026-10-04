@@ -99,7 +99,7 @@ import { HERO_BLUEPRINT_VISIBLE } from "@/lib/hero-frame";
  *
  * ⛔ IT MUST NOT DELAY `data-ankaa-motion`, AND IT DOES NOT. The stamp is
  * still the first statement in the effect, before any awaiting, so the guard's
- * 1.8s flicker timer still finds it on a healthy page and still fires on a
+ * 4s flicker timer still finds it on a healthy page and still fires on a
  * page where motion genuinely never arrived. If you ever move the stamp below
  * the gate, every slow-but-working visit starts being declared late.
  *
@@ -118,7 +118,7 @@ import { HERO_BLUEPRINT_VISIBLE } from "@/lib/hero-frame";
  *   after the hero has already been seen is not an intro. (N2 removed that
  *   script's `sessionStorage` flag — see `layout.tsx`.)
  * · `data-ankaa-motion` / `data-flicker-timeout` — the late-bundle handshake.
- *   The effect stamps the first as its very first statement; the guard's 1.8s
+ *   The effect stamps the first as its very first statement; the guard's 4s
  *   timer stamps the second only if it does not find it, and this file then
  *   skips every entrance tween. FADE measured a 22.0s blank hero on Slow 3G
  *   and a permanently blank one behind a 404'd chunk; that is what this pair
@@ -142,7 +142,7 @@ const REST_INK = "rgba(255,255,255,0.2)";
 /**
  * N6's ceiling, in ms **from navigation start** — not from the moment the
  * bundle ran. See the READINESS GATE block above for why the origin matters.
- * It sits below the guard's 1.8s flicker deadline on purpose: whatever the
+ * It sits below the guard's 4s flicker deadline on purpose: whatever the
  * gate decides, the sequence has begun before that timer would have had
  * anything to say about it.
  */
@@ -173,7 +173,7 @@ export function HeroMotion() {
     const root = document.documentElement;
 
     /* ⛔ FIRST STATEMENT IN THE EFFECT, and it must stay first. The inline
-       guard in `layout.tsx` arms a 1.8s timer that declares the bundle late
+       guard in `layout.tsx` arms a 4s timer that declares the bundle late
        unless it finds this attribute. Stamping it here — synchronously, before
        any early return, before reduced-motion is even consulted, and before
        N6's gate begins waiting for anything — is what makes a normal visit
@@ -184,7 +184,7 @@ export function HeroMotion() {
 
     const intro = root.dataset.ankaaIntro === "run";
 
-    /* The timer won that race: the bundle was slower than 1.8s, §8.3's third
+    /* The timer won that race: the bundle was slower than 4s, §8.3's third
        escape has already revealed `[data-prevent-flicker]`, and the visitor has
        been reading this hero. Animating it in now would take it away and give
        it back — the same "sees the ending first" failure the intro guard exists
@@ -247,7 +247,7 @@ export function HeroMotion() {
 
     if (lateBundle) {
       /* The paper is already gone from the visitor's point of view — §8.3
-         revealed the type at 1.8s and the intro guard's own 6s failsafe has
+         revealed the type at 4s and the intro guard's own 6s failsafe has
          long since cleared `data-ankaa-intro`. Land everything on its resting
          state in one frame, with no tween. */
       splitType(0);

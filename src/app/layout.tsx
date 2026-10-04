@@ -166,7 +166,7 @@ export const viewport: Viewport = {
  * replay the intro no matter how many times it re-renders this layout.
  *
  * The other three conditions are untouched, deliberately: reduced motion still
- * never runs it, the 6s failsafe is still here, and the 1.8s flicker timeout
+ * never runs it, the 6s failsafe is still here, and the 4s flicker timeout
  * below is still armed before anything that could throw.
  *
  * ⚠ ONE KNOWN EDGE, unchanged by N2 and recorded so it is not rediscovered as
@@ -176,7 +176,13 @@ export const viewport: Viewport = {
  * set and plays the intro. `<HeroMotion>` only mounts on `/`, which is why
  * nothing clears it earlier there. It behaved identically before.
  *
- * ⭐ THE 1.8s FLICKER TIMEOUT — the third escape for globals.css §8.3.
+ * ⭐ THE 4s FLICKER TIMEOUT — the third escape for globals.css §8.3.
+ *
+ * It was 1.8s until 2026-10-04. Measured on a cold cache: the bundle lands at
+ * ~2.4s on 4G and ~5.2s on slow 4G, so 1.8s declared almost every FIRST visit
+ * "late" and skipped the intro — it only ever played on a refresh. 4s was the
+ * operator's call: the intro plays on normal mobile/VPN first visits, and a
+ * slow link still gets the page well inside the 6s failsafe.
  *
  * §8.3 pre-hides six elements and had exactly two escapes: `(scripting: none)`
  * and `(prefers-reduced-motion: reduce)`. FADE measured what neither of them
@@ -188,14 +194,14 @@ export const viewport: Viewport = {
  *
  * So the FIRST thing this script does — before the try/catch has anything it
  * could throw on, and from inline HTML that no chunk failure can take away —
- * is arm a 1.8s timer. 1.8s, not 6s: this is a deadline for the BUNDLE, not
+ * is arm a 4s timer. 4s, not 6s: this is a deadline for the BUNDLE, not
  * for the intro, and a visitor staring at an empty hero counts the seconds.
  *
  * ⛔ THE TIMER IS NOT UNCONDITIONAL, AND THAT IS THE WHOLE DESIGN.
  * `<HeroMotion>` stamps `data-ankaa-motion` on `<html>` the instant its layout
  * effect runs. The timer fires, finds that attribute, and does nothing — so a
  * normal visit is byte-for-byte the intro that was always there. It only acts
- * when motion has NOT arrived by 1.8s, and then it does two things:
+ * when motion has NOT arrived by 4s, and then it does two things:
  *
  *   `data-flicker-timeout`  → globals.css §8.3 reveals the pre-hidden type
  *   removes `data-ankaa-intro` → §8.1 drops the paper and releases the header,
@@ -227,17 +233,17 @@ export const viewport: Viewport = {
  * This script decides WHETHER the sequence runs. `hero-motion.tsx` decides
  * WHEN: it holds the first frame until the fonts have loaded and the hero
  * photograph has decoded, capped so nothing can start later than 1.5s after
- * navigation start. Splitting it that way is what keeps the 1.8s timer below
+ * navigation start. Splitting it that way is what keeps the 4s timer below
  * meaningful — the gate never delays `data-ankaa-motion`, which is stamped
  * synchronously before any waiting begins. Read `hero-motion.tsx`'s READINESS
  * GATE block before changing either number.
  *
  * It is ~380 bytes. The try/catch is belt-and-braces for a script that runs
  * before anything else in the document and has no error boundary above it; the
- * 1.8s timer is armed on the first line inside it so that even a throw on the
+ * 4s timer is armed on the first line inside it so that even a throw on the
  * next statement cannot take the flicker escape away.
  * -------------------------------------------------------------------------- */
-const INTRO_GUARD = `try{var d=document.documentElement;if("scrollRestoration"in history)history.scrollRestoration="manual";setTimeout(function(){if(!d.hasAttribute("data-ankaa-motion")){d.setAttribute("data-flicker-timeout","");d.removeAttribute("data-ankaa-intro")}},1800);if(!matchMedia("(prefers-reduced-motion: reduce)").matches){d.setAttribute("data-ankaa-intro","run");setTimeout(function(){d.removeAttribute("data-ankaa-intro")},6000)}}catch(e){}`;
+const INTRO_GUARD = `try{var d=document.documentElement;if("scrollRestoration"in history)history.scrollRestoration="manual";setTimeout(function(){if(!d.hasAttribute("data-ankaa-motion")){d.setAttribute("data-flicker-timeout","");d.removeAttribute("data-ankaa-intro")}},4000);if(!matchMedia("(prefers-reduced-motion: reduce)").matches){d.setAttribute("data-ankaa-intro","run");setTimeout(function(){d.removeAttribute("data-ankaa-intro")},6000)}}catch(e){}`;
 
 export default function RootLayout({ children, modal }: LayoutProps<"/">) {
   return (

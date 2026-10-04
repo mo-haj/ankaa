@@ -1051,7 +1051,7 @@ body:not(:has([data-slot="hero-media"])) [data-slot="header-backdrop"] {
    `media (scripting: none)` does not fire in either case: scripting IS enabled,
    the bundle is merely late or gone. So the escape has to come from the one
    piece of JS that cannot be late — the inline `INTRO_GUARD` in `layout.tsx`,
-   which arms a 1.8s timer that stamps `data-flicker-timeout` on `<html>`.
+   which arms a 4s timer that stamps `data-flicker-timeout` on `<html>`.
 
    Specificity is deliberate: `html[data-flicker-timeout]` is (0,2,0) against
    the (0,1,0) hide above, so it wins without `!important`. It stays unlayered
