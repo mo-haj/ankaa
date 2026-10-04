@@ -2,7 +2,7 @@
  * PLACEHOLDERS — the single registry of facts the client has NOT supplied.
  *
  * WHY THIS FILE EXISTS
- * جمعية العنقاء السكنية is a real Syrian housing cooperative. People will make
+ * جمعية البنيان السكنية is a real Syrian housing cooperative. People will make
  * financial decisions on the strength of what this site says. A fabricated
  * licence number, phone number, price or delivery date is not a placeholder —
  * it is a lie with money attached. So there is exactly one rule here:
@@ -117,7 +117,7 @@ export const phone: Fact = {
  *
  * WHERE THEY CAME FROM. The OPERATOR supplied both on 2026-08-21 so the contact
  * band could be built and driven with working links. They did NOT come from
- * جمعية العنقاء السكنية, the association does not publish them anywhere,
+ * جمعية البنيان السكنية, the association does not publish them anywhere,
  * and the operator has said they will be replaced.
  *
  * WHAT THIS MEANS RIGHT NOW. The site is live-shaped: `#contact` renders a real
@@ -360,7 +360,7 @@ export const chairmanPortrait: MediaFact = {
   /* Names the ROLE and the association, and does not begin with "صورة" — a
      screen reader already announces that this is an image, so spending the
      first word of the alt text saying so again is noise. */
-  alt: "رئيس مجلس إدارة جمعية العنقاء السكنية",
+  alt: "رئيس مجلس إدارة جمعية البنيان السكنية",
   fallback: "تضاف صورة رئيس مجلس الإدارة",
   requires:
     "STILL OPEN, now as a REPLACEMENT for the interim asset above. A real, consented environmental portrait (85mm, office or site, window light), 2:3 plus a 1:1 crop, min 4000px long edge. What is shipping today is abo_hmza.webp at 859×1280 / 23 KB — visibly over-compressed — and the person in it is still unnamed (see people.chairmanName, which remains an open blocker).",
@@ -424,7 +424,7 @@ export const boardDeputyPortrait: MediaFact = {
   id: "people.board.deputy.portrait",
   /* ⛔ `null`, NOT A STOCK PHOTOGRAPH. See the block above this group. */
   src: null,
-  alt: "نائب رئيس مجلس الإدارة في جمعية العنقاء السكنية",
+  alt: "نائب رئيس مجلس الإدارة في جمعية البنيان السكنية",
   fallback: "تضاف الصورة بعد اعتمادها",
   requires:
     "A consented head-and-shoulders portrait of the deputy chair, 2:3, min 1600px long edge, on a plain or office background. Drop it at `public/images/board/deputy.webp` and set `src` on this fact — that is the whole change.",
@@ -447,7 +447,7 @@ export const boardSecretaryPortrait: MediaFact = {
   id: "people.board.secretary.portrait",
   /* ⛔ `null`, NOT A STOCK PHOTOGRAPH. See the block above this group. */
   src: null,
-  alt: "أمين السر في جمعية العنقاء السكنية",
+  alt: "أمين السر في جمعية البنيان السكنية",
   fallback: "تضاف الصورة بعد اعتمادها",
   requires:
     "A consented head-and-shoulders portrait of the secretary, 2:3, min 1600px long edge, on a plain or office background. Drop it at `public/images/board/secretary.webp` and set `src` on this fact — that is the whole change.",
@@ -470,7 +470,7 @@ export const boardTreasurerPortrait: MediaFact = {
   id: "people.board.treasurer.portrait",
   /* ⛔ `null`, NOT A STOCK PHOTOGRAPH. See the block above this group. */
   src: null,
-  alt: "أمين الصندوق في جمعية العنقاء السكنية",
+  alt: "أمين الصندوق في جمعية البنيان السكنية",
   fallback: "تضاف الصورة بعد اعتمادها",
   requires:
     "A consented head-and-shoulders portrait of the treasurer, 2:3, min 1600px long edge, on a plain or office background. Drop it at `public/images/board/treasurer.webp` and set `src` on this fact — that is the whole change.",
@@ -493,7 +493,7 @@ export const boardMemberPortrait: MediaFact = {
   id: "people.board.member.portrait",
   /* ⛔ `null`, NOT A STOCK PHOTOGRAPH. See the block above this group. */
   src: null,
-  alt: "عضو مجلس الإدارة في جمعية العنقاء السكنية",
+  alt: "عضو مجلس الإدارة في جمعية البنيان السكنية",
   fallback: "تضاف الصورة بعد اعتمادها",
   requires:
     "A consented head-and-shoulders portrait of the board member, 2:3, min 1600px long edge, on a plain or office background. Drop it at `public/images/board/member.webp` and set `src` on this fact — that is the whole change.",

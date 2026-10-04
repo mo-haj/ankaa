@@ -73,8 +73,8 @@ const fontNaskh = Noto_Naskh_Arabic({
  * Metadata. Every user-facing string comes from src/content/site.ts, so the
  * <title> and the OG card cannot drift from the copy on the page.
  *
- * NOTE: the scaffold shipped `جمعية عنقاء السكنية`; the client's own name — and
- * every occurrence of it on the live site — is `جمعية العنقاء السكنية`, with the
+ * NOTE: the scaffold shipped `جمعية البنيان السكنية`; the client's own name — and
+ * every occurrence of it on the live site — is `جمعية البنيان السكنية`, with the
  * definite article (SOVA §5.1). Corrected here to the verbatim source.
  *
  * WAVE 3 closed SOVA §9 #15/#16:
@@ -101,8 +101,8 @@ export const metadata: Metadata = {
   description: site.meta.description,
   applicationName: site.meta.title,
   keywords: [
-    "جمعية العنقاء السكنية",
-    "العنقاء السكنية",
+    "جمعية البنيان السكنية",
+    "البنيان السكنية",
     "مشاريع سكنية تعاونية",
     "جمعية سكنية مرخصة",
     "ريف دمشق الغربي",

@@ -20,22 +20,22 @@
 export const site = {
   /** SOVA §5.1 */
   meta: {
-    title: "جمعية العنقاء السكنية",
+    title: "جمعية البنيان السكنية",
     description:
-      "جمعية العنقاء السكنية — مشاريع سكنية تعاونية بمواصفات جيدة وكلفة مدروسة في ريف دمشق الغربي.",
+      "جمعية البنيان السكنية — مشاريع سكنية تعاونية بمواصفات جيدة وكلفة مدروسة في ريف دمشق الغربي.",
     locale: "ar_SY",
   },
 
   brand: {
-    name: "العنقاء السكنية",
+    name: "البنيان السكنية",
     tagline: "جمعية سكنية مرخصة",
-    logoAlt: "شعار جمعية العنقاء",
+    logoAlt: "شعار جمعية البنيان",
     /**
      * The full legal name. On the old site it exists ONLY as an alt attribute —
      * SOVA §5.1 notes it "should be used properly". It is used properly in the
      * footer.
      */
-    fullName: "جمعية العنقاء التعاونية للسكن والاصطياف",
+    fullName: "جمعية البنيان التعاونية للسكن والاصطياف",
   },
 
   /** SOVA §5.1 — accessibility strings that already existed on the old site. */

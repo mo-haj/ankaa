@@ -184,7 +184,7 @@ export const contact = {
          * the visitor, and it names the source so a message arriving in a
          * personal WhatsApp is not mistaken for one.
          */
-        draftTitle: "طلب من موقع جمعية العنقاء السكنية",
+        draftTitle: "طلب من موقع جمعية البنيان السكنية",
       },
     },
   },

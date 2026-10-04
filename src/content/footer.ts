@@ -15,7 +15,7 @@
  * ========================================================================== */
 
 export const footer = {
-  brand: "جمعية العنقاء السكنية",
+  brand: "جمعية البنيان السكنية",
   tagline: "كلفة مدروسة، مواصفات جيدة.",
 
   /** authored — column headings. */
@@ -35,7 +35,7 @@ export const footer = {
   },
 
   /** `{year}` is substituted at render time from the build's current year. */
-  copyright: "© {year} جمعية العنقاء السكنية. جميع الحقوق محفوظة.",
+  copyright: "© {year} جمعية البنيان السكنية. جميع الحقوق محفوظة.",
 
   disclaimer: "الصور المعروضة تصورية وليست صورا للمشاريع المنفذة فعليا.",
 } as const;

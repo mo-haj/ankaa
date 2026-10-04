@@ -40,7 +40,7 @@ import { footerNav } from "@/content/nav";
  * the content file for the day `global-not-found` graduates from experimental.
  *
  * ⚠ SAGE-2 TRIED AND REVERTED THE OBVIOUS FIX. WCAG 2.4.2 (Level A) wants this
- * page titled for its topic, and today a 404 is called «جمعية العنقاء السكنية»
+ * page titled for its topic, and today a 404 is called «جمعية البنيان السكنية»
  * — identical to the home page. The React 19 <title> ELEMENT is the mechanism
  * that works where a `metadata` export does not, and `global-error.tsx` already
  * relies on it. It does NOT work here. MEASURED on a production build: the head

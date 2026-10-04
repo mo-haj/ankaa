@@ -35,7 +35,7 @@ import { type BoardSeat, board, boardSeats } from "@/content/board";
  *     different site. Each seat is a portrait frame plus a hairline-topped
  *     block of text, which is the `location.tsx` map frame's construction
  *     turned portrait.
- *   · ONE GOLD ELEMENT (AGENTS §8): the <Accent> on «جمعية العنقاء السكنية.»
+ *   · ONE GOLD ELEMENT (AGENTS §8): the <Accent> on «جمعية البنيان السكنية.»
  *     in the h1. So `rule={false}` on the kicker, `variant="outline"` on the
  *     CTA, and the watermark below is `--fg` at 8%, never the metal.
  *

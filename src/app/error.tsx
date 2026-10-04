@@ -75,7 +75,7 @@ export default function RouteError({
   return (
     <main id="main" className="flex-1">
       {/* ⛔ SAGE-2 — a client boundary cannot export `metadata`, so without this
-          the failure screen was titled «جمعية العنقاء السكنية», identical to
+          the failure screen was titled «جمعية البنيان السكنية», identical to
           the home page (WCAG 2.4.2, Level A). React 19 hoists <title> out of
           any component; `global-error.tsx` already uses the same mechanism. */}
       <title>{`${errors.error.metaTitle} | ${site.meta.title}`}</title>

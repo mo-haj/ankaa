@@ -116,7 +116,7 @@ export type DeliveryResult =
  * -------------------------------------------------------------------------- */
 
 /** Constant. No interpolation, ever — see the block above. */
-const SUBJECT = "طلب جديد من موقع جمعية العنقاء السكنية";
+const SUBJECT = "طلب جديد من موقع جمعية البنيان السكنية";
 
 /**
  * Resend's shared sandbox sender.

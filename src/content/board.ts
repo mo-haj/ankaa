@@ -113,7 +113,7 @@ export const board = {
   title: {
     a: "من يدير",
     /** gold — the page's one gold element. */
-    b: "جمعية العنقاء السكنية.",
+    b: "جمعية البنيان السكنية.",
   },
 
   /** authored */

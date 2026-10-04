@@ -34,7 +34,7 @@ import { absoluteUrl, siteUrl } from "@/lib/site-url";
  * =============================================================================
  * · `RealEstateAgent` — SOVA §9 #16 lists it as applicable and it was
  *   considered. It is not emitted: the type describes a business that brokers
- *   property for others, and جمعية العنقاء is a cooperative that builds and
+ *   property for others, and جمعية البنيان is a cooperative that builds and
  *   allocates housing to its own members. Beyond the semantics, the type's
  *   whole value comes from `address`, `telephone`, `openingHours` and
  *   `priceRange` — we have none of the four, so it would be an empty node
@@ -85,10 +85,10 @@ export function OrganizationJsonLd() {
      * routes are served at `/icon?<hash>` and `/opengraph-image?<hash>`, and
      * the hash changes when the file does — so `/icon.png` and
      * `/opengraph-image.png` were 404s sitting inside the structured data,
-     * asserting a logo that does not resolve. `public/images/ankaa-logo.png`
-     * is the brand artwork, at a stable path, 655×624.
+     * asserting a logo that does not resolve. `public/images/new_logo_bonian.png`
+     * is the brand artwork, at a stable path, 612×408.
      */
-    logo: absoluteUrl("/images/ankaa-logo.png"),
+    logo: absoluteUrl("/images/new_logo_bonian.png"),
     description: site.meta.description,
     inLanguage: "ar",
     // The four operating areas ARE published, by name, by the client.

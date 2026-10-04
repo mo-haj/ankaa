@@ -28,7 +28,7 @@ import { Block, Group, Ratio, RatioTable, Spec, Swatch } from "./styleguide-part
 export const metadata: Metadata = {
   title: "نظام التصميم",
   description:
-    "دليل نظام التصميم لجمعية عنقاء السكنية — الألوان، الطباعة، المسافات، والمكونات.",
+    "دليل نظام التصميم لجمعية البنيان السكنية — الألوان، الطباعة، المسافات، والمكونات.",
   robots: { index: false, follow: false },
 };
 
@@ -78,7 +78,7 @@ const GOLD = [
 const TYPE = [
   { token: "display-1", cls: "text-display-1 font-display", spec: "clamp(44 → 84px) · 600 · 1.18", sample: "من المخطط إلى البيت" },
   { token: "display-2", cls: "text-display-2 font-display", spec: "clamp(36 → 64px) · 600 · 1.22", sample: "سكن يليق بأهله" },
-  { token: "h1", cls: "text-h1 font-display", spec: "clamp(32 → 48px) · 600 · 1.28", sample: "جمعية عنقاء السكنية" },
+  { token: "h1", cls: "text-h1 font-display", spec: "clamp(32 → 48px) · 600 · 1.28", sample: "جمعية البنيان السكنية" },
   { token: "h2", cls: "text-h2 font-display", spec: "clamp(28 → 36px) · 600 · 1.32", sample: "مشاريعنا في المحافظات" },
   { token: "h3", cls: "text-h3 font-display", spec: "clamp(22 → 26px) · 600 · 1.40", sample: "تصميم معماري راق" },
   { token: "h4", cls: "text-h4 font-display", spec: "20px · 600 · 1.45", sample: "خطوات الانتساب إلى الجمعية" },
@@ -322,7 +322,7 @@ export default function StyleguidePage() {
               </div>
             </div>
             <div className="lg:col-span-4 lg:col-start-9">
-              <AnkaaMark className="text-accent-hair ms-auto w-40" title="شعار جمعية عنقاء" />
+              <AnkaaMark className="text-accent-hair ms-auto w-40" title="شعار جمعية البنيان" />
             </div>
           </div>
         </Container>
@@ -857,7 +857,7 @@ export default function StyleguidePage() {
           <div className="flex flex-wrap items-center justify-between gap-6">
             <AnkaaMark className="text-accent-hair w-12" />
             <p className="text-caption text-fg-subtle">
-              نظام التصميم · ASTRA · عملية عنقاء
+              نظام التصميم · ASTRA · عملية البنيان
             </p>
           </div>
         </Container>

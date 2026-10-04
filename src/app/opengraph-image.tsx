@@ -43,7 +43,7 @@ import { markDataUri, OG_GOLD, OG_GREEN, OG_PAPER } from "./_brand/mark-svg";
  * =============================================================================
  * ⛔ SATORI LAYS ARABIC WORDS OUT LEFT-TO-RIGHT. THIS IS NOT A STYLE CHOICE.
  * =============================================================================
- * The first render of this card said «العنقاء جمعية السكنية» — every word
+ * The first render of this card said «البنيان جمعية السكنية» — every word
  * correctly SHAPED (Satori does joining properly) and every word in the wrong
  * ORDER, because Satori's bidi does not reorder runs and `direction: rtl` on
  * the container changed nothing. On a share card for an Arabic organisation

@@ -22,7 +22,7 @@ import {
 } from "@/components/sections";
 
 /* =============================================================================
- * HOME — جمعية العنقاء السكنية
+ * HOME — جمعية البنيان السكنية
  *
  * The section order is SOVA §11, complete as of wave 3:
  *
